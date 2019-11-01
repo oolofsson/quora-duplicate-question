@@ -20,73 +20,47 @@ namespace TextMatchPTS
             public bool Related { get; set; }
         }
         
-        static List<QuoraQuestionPair> readQuestions(int from, int to, string filePath){
+        static List<QuoraQuestionPair> readQuestionPairs(int from, int to, string filePath){
             string[] lines = File.ReadAllLines(filePath);
-            var questions = new List<QuoraQuestionPair>();
-    
+            var questionPairs = new List<QuoraQuestionPair>();    
             for(int i = from; i < to; i++){
-                var question = new QuoraQuestionPair();
+                var questionPair = new QuoraQuestionPair();
                 try{
                     var l = lines[i].Split(',');
                     
-                    question.Question1 = l[4];
-                    question.Question2 = l[5];
-                    question.Related = l[6].Equals("1");
+                    questionPair.Question1 = l[4];
+                    questionPair.Question2 = l[5];
+                    questionPair.Related = l[6].Equals("1");
                     
-                    Console.WriteLine(question.Question1);
-                    Console.WriteLine(question.Question2);
-                    questions.Add(question);
+                    Console.WriteLine(questionPair.Question1);
+                    Console.WriteLine(questionPair.Question2);
+                    questionPairs.Add(questionPair);
 
                 }catch(System.Exception){
                     Console.WriteLine("problem at line: " + i);
                 }
             }
-            Console.WriteLine("Questions length: " + questions.Count);
-            return questions.OrderBy(a => Guid.NewGuid()).ToList();
+            Console.WriteLine("Questions length: " + questionPairs.Count);
+            return questionPairs.OrderBy(a => Guid.NewGuid()).ToList();
         }
 
-        static List<Tuple<bool, float[]>> getQuestionsAsVectors(int from, int to, string filePath, Word2Vec word2VecModel){
+        static List<Tuple<bool, float[]>> getQuestionsAsVector(int from, int to, string filePath, Word2Vec word2VecModel){
             //var word2VecModel = Word2Vec.LoadText("models/newsv/model.txt", true, false, "");
             
-            var questions = readQuestions(from, to, filePath);
             var docRelations = new List<Tuple<bool, float[]>>();
-            foreach(QuoraQuestionPair question in questions){
+            var qPs = readQuestionPairs(from, to, filePath);
+            foreach(QuoraQuestionPair questionPair in qPs){
                 try{
-                    NDArray v1 = TextProcessing.VectorizeMean(question.Question1, word2VecModel);
-                    //Console.WriteLine(question.Question2.Length);
-                    NDArray v2 = TextProcessing.VectorizeMean(question.Question2, word2VecModel);
+                    NDArray v1 = TextProcessing.Vectorize(questionPair.Question1, word2VecModel);
+                    NDArray v2 = TextProcessing.Vectorize(questionPair.Question2, word2VecModel);
                     //NDArray diff = np.subtract(v1, v2);
                     double[] conc = np.concatenate((v1, v2)).ToArray<double>();
-                    
+                    // NDArray -> double[] -> float[]  
                     float[] merged = Array.ConvertAll(conc, s => (float) s);
-                    
-                    var docRelation = Tuple.Create(question.Related, merged);
+                    var docRelation = Tuple.Create(questionPair.Related, merged);
                     docRelations.Add(docRelation);
                 }catch(System.Exception){
-
-                }
-            }
-            return docRelations;
-        }
-        static List<Tuple<bool, float[,], float[,]>> getQuestionsAsMatrices(int from, int to, string filePath, Word2Vec word2VecModel){
-            //var word2VecModel = Word2Vec.LoadText("models/newsv/model.txt", true, false, "");
-            
-            var questions = readQuestions(from, to, filePath);
-            var docRelations = new List<Tuple<bool, float[,], float[,]>>();
-            foreach(QuoraQuestionPair question in questions){
-                try{
-                    float[,] v1 = TextProcessing.VectorizeFull(question.Question1, word2VecModel);
-                    //Console.WriteLine(question.Question2.Length);
-                    float[,] v2 = TextProcessing.VectorizeFull(question.Question2, word2VecModel);
-                    //double[] conc = np.concatenate((v1, v2)).ToArray<double>();
-                    //Console.WriteLine(v1.ToString());
-                    //Console.WriteLine(v2.ToString());
-                    //float[] merged = Array.ConvertAll(conc, s => (float) s);
-                     
-                    var docRelation = Tuple.Create(question.Related, v1, v2);
-                    docRelations.Add(docRelation);
-                }catch(System.Exception){
-
+                    Console.WriteLine("could not vectorize.");
                 }
             }
             return docRelations;
@@ -95,17 +69,12 @@ namespace TextMatchPTS
         {
             
             //var word2VecModel = Word2Vec.LoadBinary("models/GoogleNews-vectors-negative300.bin", true, false, "", Encoding.GetEncoding("ISO-8859-1"));
-            var word2VecModel = Word2Vec.LoadText("models/bloggmix2008w2v.txt", true, false, "");
+            var word2VecModel = Word2Vec.LoadText("models/bloggmix2013w2v.txt", true, false, "");
             
-            var train = getQuestionsAsMatrices(0, 1000, "data/train_sv.csv", word2VecModel);
-            var test = getQuestionsAsMatrices(0, 100, "data/test_sv.csv", word2VecModel);
-
-            Train.MultilayerPerceptron2DInput(train, test);
-            //Console.WriteLine("Training small network");
-            //Train.MultilayerPerceptron1DInputSm(train, test);
-            //Console.WriteLine("Training large network");
-            //Train.MultilayerPerceptron1DInputLg(train, test);
-            //Train.LightGbm(train);
+            var train = getQuestionsAsVector(0, 3000, "data/train_sv.csv", word2VecModel);
+            var test = getQuestionsAsVector(0, 100, "data/test_sv.csv", word2VecModel);
+            Learning.LargeNetwork(train, test);
+            Learning.LightGbm(train);
         }
     }
 }

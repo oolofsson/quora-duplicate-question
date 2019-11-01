@@ -12,7 +12,7 @@ using Keras.Optimizers;
 
 namespace TextMatchPTS 
 {
-    class Train 
+    class Learning
     {
 
         // This example requires installation of additional NuGet package for 
@@ -170,7 +170,7 @@ namespace TextMatchPTS
             NDarray l = np.array(y);
             return Tuple.Create(l, f);
         }
-        public static void MultilayerPerceptron1DInputLg(List<Tuple<bool, float[]>> train, List<Tuple<bool, float[]>> test)
+        public static void LargeNetwork(List<Tuple<bool, float[]>> train, List<Tuple<bool, float[]>> test)
         {
             int vectorSize = train[0].Item2.Length;
             //Load train data
@@ -179,14 +179,12 @@ namespace TextMatchPTS
 
             //Build sequential model
             var model = new Sequential();
-            model.Add(new Dense(32, activation: "relu", input_shape: new Shape(vectorSize)));
+            model.Add(new Dense(16, activation: "relu", input_shape: new Shape(vectorSize)));
+            model.Add(new Dense(32, activation: "relu"));
+            model.Add(new Dropout(0.5));
             model.Add(new Dense(64, activation: "relu"));
             model.Add(new Dropout(0.5));
             model.Add(new Dense(128, activation: "relu"));
-            model.Add(new Dropout(0.5));
-            model.Add(new Dense(128, activation: "relu"));
-            model.Add(new Dropout(0.5));
-            model.Add(new Dense(256, activation: "relu"));
             model.Add(new Dense(1, activation: "sigmoid"));
 
             //Compile and train
@@ -204,7 +202,7 @@ namespace TextMatchPTS
             model.SaveWeight("./models/lg_model.h5");
 
         }
-        public static void MultilayerPerceptron1DInputSm(List<Tuple<bool, float[]>> train, List<Tuple<bool, float[]>> test)
+        public static void SmallNetwork(List<Tuple<bool, float[]>> train, List<Tuple<bool, float[]>> test)
         {
             int vectorSize = train[0].Item2.Length;
             //Load train data
@@ -215,7 +213,7 @@ namespace TextMatchPTS
             var model = new Sequential();
             model.Add(new Dense(8, activation: "relu", input_shape: new Shape(vectorSize)));
             model.Add(new Dropout(0.5));
-            model.Add(new Dense(8, activation: "relu"));
+            model.Add(new Dense(16, activation: "relu"));
             model.Add(new Dropout(0.5));
             model.Add(new Dense(1, activation: "sigmoid"));
 
@@ -236,11 +234,21 @@ namespace TextMatchPTS
             model.SaveWeight("./models/sm_model.h5");
 
         }
-        public static void MultilayerPerceptron2DInput(List<Tuple<bool, float[,], float[,]>> train, List<Tuple<bool, float[,], float[,]>> test){
+        public static void SiameseNetwork(List<Tuple<bool, float[]>> train, List<Tuple<bool, float[]>> test){
+            
             int vectorSize = train[0].Item2.Length;
             //Load train data
-            //var nTrain = listToNDarrays(train, vectorSize);
-            //var nTest = listToNDarrays(test, vectorSize);
+            var nTrain = ListToNDarrays(train, vectorSize);
+            var nTest = ListToNDarrays(test, vectorSize);
+
+            var model = new Sequential();
+
+            model.Add(new Dense(8, activation: "relu", input_shape: new Shape(vectorSize)));
+            model.Add(new Dropout(0.5));
+            model.Add(new Dense(16, activation: "relu"));
+            model.Add(new Dropout(0.5));
+            model.Add(new Dense(1, activation: "sigmoid"));
+
 
 
         }
