@@ -7,7 +7,7 @@ using Proxem.Word2Vec;
 using NumSharp;
 using System.Text.RegularExpressions;
 
-namespace TextMatchPTS
+namespace TextMatch
 {
 
     class TextProcessing
