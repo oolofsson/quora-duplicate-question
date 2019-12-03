@@ -10,7 +10,7 @@ using Keras.Layers;
 using Keras.Models;
 using Keras.Optimizers;
 
-namespace TextMatchPTS 
+namespace TextMatch
 {
     class Learning
     {
